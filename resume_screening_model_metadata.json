@@ -1,0 +1,12 @@
+{
+  "scikit_learn_version": "1.9.1",
+  "feature_columns": [
+    "years_experience",
+    "skills_match_score",
+    "education_level",
+    "project_count",
+    "resume_length",
+    "github_activity"
+  ],
+  "target_column": "shortlisted"
+}
