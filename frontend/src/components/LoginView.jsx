@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  KeyRound,
 } from "lucide-react";
 import { loginHr, registerHr } from "../api/client.js";
 
@@ -39,13 +38,6 @@ export default function LoginView({ onAuthenticated }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemoCredentials = () => {
-    setMode("login");
-    setEmail("hr@talentlens.ai");
-    setPassword("Admin@123");
-    setError("");
   };
 
   return (
@@ -247,26 +239,6 @@ export default function LoginView({ onAuthenticated }) {
               </button>
             </form>
 
-            {/* Demo Account Card */}
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <KeyRound className="h-3.5 w-3.5 text-blue-600" />
-                  Demo HR Credentials
-                </div>
-                <button
-                  type="button"
-                  onClick={fillDemoCredentials}
-                  className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-blue-600 ring-1 ring-slate-200 hover:bg-blue-50"
-                >
-                  Auto-fill
-                </button>
-              </div>
-              <p className="mt-1.5 text-[11px] text-slate-500">
-                Email: <code className="font-semibold text-slate-700">hr@talentlens.ai</code> ·
-                Password: <code className="font-semibold text-slate-700">Admin@123</code>
-              </p>
-            </div>
           </div>
         </div>
       </div>

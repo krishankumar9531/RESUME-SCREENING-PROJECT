@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: talentlens-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: HR_AUTH_SECRET
+        generateValue: true
+      - key: TALENTLENS_DISABLE_DEMO_LOGIN
+        value: "true"

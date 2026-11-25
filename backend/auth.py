@@ -23,6 +23,9 @@ SESSION_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
 
 DEFAULT_HR_EMAIL = "hr@talentlens.ai"
 DEFAULT_HR_PASSWORD = os.environ.get("TALENTLENS_DEMO_HR_PASSWORD", "Admin@123")
+DEMO_LOGIN_ENABLED = os.environ.get("TALENTLENS_DISABLE_DEMO_LOGIN", "").strip().lower() not in {
+    "1", "true", "yes", "on"
+}
 
 
 def _get_signing_secret() -> bytes:
@@ -60,7 +63,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_auth_db() -> None:
-    """Create HR users table and seed the default demo HR account if missing."""
+    """Create HR users table and seed the demo account unless explicitly disabled."""
     with _connect() as conn:
         conn.execute(
             """
@@ -77,7 +80,7 @@ def init_auth_db() -> None:
         existing = conn.execute(
             "SELECT id FROM hr_users WHERE email = ?", (DEFAULT_HR_EMAIL,)
         ).fetchone()
-        if existing is None:
+        if DEMO_LOGIN_ENABLED and existing is None:
             conn.execute(
                 "INSERT INTO hr_users (name, email, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
                 (
