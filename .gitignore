@@ -1,6 +1,10 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .env
 .streamlit/secrets.toml
+frontend/node_modules/
+backend/*.db
+backend/.auth_secret
