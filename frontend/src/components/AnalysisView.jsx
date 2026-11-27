@@ -157,7 +157,11 @@ export default function AnalysisView({
                           step="0.5"
                           value={r.experience}
                           onChange={(e) =>
-                            onUpdateResumeField(idx, "experience", parseFloat(e.target.value) || 0)
+                            onUpdateResumeField(
+                              idx,
+                              "experience",
+                              Math.max(0, Math.min(40, parseFloat(e.target.value) || 0))
+                            )
                           }
                           className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-800"
                         />
@@ -186,7 +190,11 @@ export default function AnalysisView({
                           step="1"
                           value={r.projects}
                           onChange={(e) =>
-                            onUpdateResumeField(idx, "projects", parseInt(e.target.value, 10) || 0)
+                            onUpdateResumeField(
+                              idx,
+                              "projects",
+                              Math.max(0, Math.min(50, parseInt(e.target.value, 10) || 0))
+                            )
                           }
                           className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-800"
                         />

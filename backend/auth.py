@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import sqlite3
 import time
@@ -23,6 +24,8 @@ SESSION_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
 
 DEFAULT_HR_EMAIL = "hr@talentlens.ai"
 DEFAULT_HR_PASSWORD = os.environ.get("TALENTLENS_DEMO_HR_PASSWORD", "Admin@123")
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_initialized_db_path: Path | None = None
 DEMO_LOGIN_ENABLED = os.environ.get("TALENTLENS_DISABLE_DEMO_LOGIN", "").strip().lower() not in {
     "1", "true", "yes", "on"
 }
@@ -62,8 +65,12 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
-def init_auth_db() -> None:
+def init_auth_db(force: bool = False) -> None:
     """Create HR users table and seed the demo account unless explicitly disabled."""
+    global _initialized_db_path
+    if not force and _initialized_db_path == DB_PATH and DB_PATH.exists():
+        return
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _connect() as conn:
         conn.execute(
             """
@@ -92,6 +99,7 @@ def init_auth_db() -> None:
                 ),
             )
         conn.commit()
+    _initialized_db_path = DB_PATH
 
 
 def _public_user(row: sqlite3.Row) -> dict[str, Any]:
@@ -120,10 +128,12 @@ def create_hr_user(name: str, email: str, password: str, role: str = "HR Recruit
     clean_role = role.strip() or "HR Recruiter"
     if not clean_name:
         raise ValueError("Full name is required.")
-    if "@" not in clean_email or "." not in clean_email.split("@")[-1]:
+    if not _EMAIL_RE.match(clean_email):
         raise ValueError("Please enter a valid work email address.")
-    if len(password) < 6:
-        raise ValueError("Password must be at least 6 characters.")
+    if not password.strip() or len(password) < 6:
+        raise ValueError("Password must be at least 6 non-whitespace characters.")
+    if len(password) > 128:
+        raise ValueError("Password must be 128 characters or fewer.")
 
     with _connect() as conn:
         existing = conn.execute("SELECT id FROM hr_users WHERE email = ?", (clean_email,)).fetchone()

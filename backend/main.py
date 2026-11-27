@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import re
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -64,10 +65,17 @@ def get_model_bundle() -> dict[str, Any]:
     return load_model_bundle_raw(compute_metrics_if_loaded=True)
 
 
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    init_auth_db()
+    yield
+
+
 app = FastAPI(
     title="AI Resume Screening & Candidate Shortlisting API",
     version="1.0.0",
     description="FastAPI service integrating the scikit-learn shortlisting model and resume parser.",
+    lifespan=_lifespan,
 )
 
 app.add_middleware(
@@ -77,11 +85,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def _startup() -> None:
-    init_auth_db()
 
 
 # ============================================================
@@ -286,12 +289,10 @@ def current_hr_user(user: dict[str, Any] = Depends(require_hr_user)) -> dict[str
 # ============================================================
 
 @app.get("/api/health")
-def health() -> dict[str, Any]:
-    bundle = get_model_bundle()
+def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "model_loaded": bundle["model"] is not None,
-        "scikit_learn_version": sklearn.__version__,
+        "service": "TalentLens AI"
     }
 
 
@@ -576,9 +577,10 @@ if FRONTEND_DIST.exists():
 
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str) -> FileResponse:
-        if full_path.startswith("api/"):
+        if full_path == "api" or full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="API endpoint not found")
-        candidate = FRONTEND_DIST / full_path
-        if full_path and candidate.exists() and candidate.is_file():
+        dist_root = FRONTEND_DIST.resolve()
+        candidate = (dist_root / full_path).resolve()
+        if full_path and candidate.is_relative_to(dist_root) and candidate.exists() and candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(FRONTEND_DIST / "index.html")
+        return FileResponse(dist_root / "index.html")

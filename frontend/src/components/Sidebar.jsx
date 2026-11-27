@@ -117,7 +117,9 @@ export default function Sidebar({
         <div className="rounded-xl bg-slate-800/70 p-3.5 ring-1 ring-slate-700/60">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-300">ML Engine</span>
-            {modelInfo?.model_loaded ? (
+            {!modelInfo ? (
+              <span className="text-[11px] font-medium text-slate-400">Loading...</span>
+            ) : modelInfo.model_loaded ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Ready
               </span>

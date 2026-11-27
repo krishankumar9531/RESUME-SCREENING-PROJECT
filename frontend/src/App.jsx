@@ -31,6 +31,27 @@ const DEFAULT_CONFIG = {
   github_default: 321,
 };
 
+const EMPTY_REQUIREMENTS = {
+  skills: [],
+  must: [],
+  exp: 0,
+  edu_rank: 0,
+};
+
+const EMPTY_SCREENING_RESULT = {
+  candidates: [],
+  summary: {
+    total: 0,
+    shortlisted: 0,
+    review: 0,
+    rejected: 0,
+    median_score: 0,
+    avg_score: 0,
+    avg_skill_match: 0,
+    skill_coverage: [],
+  },
+};
+
 export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
   const [user, setUser] = useState(null);
@@ -40,44 +61,42 @@ export default function App() {
 
   const [modelInfo, setModelInfo] = useState(null);
   const [jdText, setJdText] = useState("");
-  const [requirements, setRequirements] = useState({
-    skills: [],
-    must: [],
-    exp: 0,
-    edu_rank: 0,
-  });
+  const [requirements, setRequirements] = useState(EMPTY_REQUIREMENTS);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [parsedResumes, setParsedResumes] = useState([]);
   const [uploadErrors, setUploadErrors] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
-  const [screeningResult, setScreeningResult] = useState({
-    candidates: [],
-    summary: {
-      total: 0,
-      shortlisted: 0,
-      review: 0,
-      rejected: 0,
-      median_score: 0,
-      avg_score: 0,
-      avg_skill_match: 0,
-      skill_coverage: [],
-    },
-  });
+  const [screeningResult, setScreeningResult] = useState(EMPTY_SCREENING_RESULT);
   const [scoring, setScoring] = useState(false);
   const [apiError, setApiError] = useState("");
   const [selectedCandidateIdx, setSelectedCandidateIdx] = useState(0);
 
+  const resetSessionState = useCallback(() => {
+    setUser(null);
+    setActiveTab("dashboard");
+    setMobileOpen(false);
+    setModelInfo(null);
+    setJdText("");
+    setRequirements(EMPTY_REQUIREMENTS);
+    setConfig(DEFAULT_CONFIG);
+    setParsedResumes([]);
+    setUploadErrors([]);
+    setScreeningResult(EMPTY_SCREENING_RESULT);
+    setApiError("");
+    setSelectedCandidateIdx(0);
+  }, []);
+
   // Check HR session on mount
   useEffect(() => {
-    setUnauthorizedHandler(() => setUser(null));
+    setUnauthorizedHandler(resetSessionState);
     fetchCurrentUser()
       .then((u) => setUser(u))
       .catch(() => setUser(null))
       .finally(() => setAuthChecking(false));
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [resetSessionState]);
 
   // Load model metadata once authenticated
   useEffect(() => {
@@ -97,20 +116,8 @@ export default function App() {
 
   // Re-score whenever resumes, requirements, or config change
   useEffect(() => {
-    if (parsedResumes.length === 0) {
-      setScreeningResult({
-        candidates: [],
-        summary: {
-          total: 0,
-          shortlisted: 0,
-          review: 0,
-          rejected: 0,
-          median_score: 0,
-          avg_score: 0,
-          avg_skill_match: 0,
-          skill_coverage: [],
-        },
-      });
+    if (!user || parsedResumes.length === 0) {
+      setScreeningResult(EMPTY_SCREENING_RESULT);
       return;
     }
 
@@ -156,16 +163,19 @@ export default function App() {
 
   const handleJdTextChange = (nextText) => {
     setJdText(nextText);
+    if (!nextText.trim()) {
+      setRequirements(EMPTY_REQUIREMENTS);
+    }
   };
 
   // Auto-detect JD requirements after brief typing pause
   useEffect(() => {
-    if (!jdText.trim()) return;
+    if (!user || !jdText.trim()) return;
     const timer = setTimeout(() => {
       handleDetectJd(jdText);
     }, 450);
     return () => clearTimeout(timer);
-  }, [jdText, handleDetectJd]);
+  }, [user, jdText, handleDetectJd]);
 
   const handleUseSampleJd = async () => {
     const sample = modelInfo?.sample_jd || "";
@@ -275,8 +285,7 @@ export default function App() {
     } catch {
       // ignore network errors on logout
     }
-    setUser(null);
-    setActiveTab("dashboard");
+    resetSessionState();
   };
 
   if (authChecking) {

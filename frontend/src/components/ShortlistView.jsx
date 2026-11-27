@@ -212,7 +212,10 @@ export default function ShortlistView({
                       <span>JD Fit: {c.rule_score != null ? `${Math.round(c.rule_score)}%` : "n/a"}</span>
                       <span>ML: {c.model_prob != null ? `${Math.round(c.model_prob * 100)}%` : "n/a"}</span>
                       <span>
-                        Skills: {c.matched.length}/{c.matched.length + c.missing.length}
+                        Skills:{" "}
+                        {c.skills_pct != null
+                          ? `${c.matched.length}/${c.matched.length + c.missing.length}`
+                          : "n/a"}
                       </span>
                     </div>
                   </div>

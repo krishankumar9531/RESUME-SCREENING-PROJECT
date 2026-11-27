@@ -110,15 +110,12 @@ export function ScoreComparisonChart({ candidates = [], cutoff = 60 }) {
         <span className="font-medium text-slate-600">Cutoff line: {cutoff}</span>
       </div>
 
-      <div className="relative space-y-3 pt-1">
-        <div
-          className="pointer-events-none absolute top-0 bottom-0 z-10 border-l-2 border-dashed border-slate-700/70"
-          style={{ left: `calc(112px + (100% - 112px) * ${Math.min(Math.max(cutoff, 0), 100) / 100})` }}
-        />
+      <div className="space-y-3 pt-1">
         {top.map((c) => {
           const modelPct = c.model_prob != null ? Math.round(c.model_prob * 100) : 0;
           const jdPct = c.rule_score != null ? Math.round(c.rule_score) : 0;
           const isHovered = hoveredIdx === c.idx;
+          const cutoffLeft = `${Math.min(Math.max(cutoff, 0), 100)}%`;
           return (
             <div
               key={c.idx}
@@ -129,7 +126,11 @@ export function ScoreComparisonChart({ candidates = [], cutoff = 60 }) {
               <div className="w-25 shrink-0 truncate text-xs font-medium text-slate-700" title={c.candidate}>
                 #{c.rank} {c.candidate}
               </div>
-              <div className="flex-1 space-y-1">
+              <div className="relative flex-1 space-y-1">
+                <div
+                  className="pointer-events-none absolute -top-1 -bottom-1 z-10 border-l-2 border-dashed border-slate-700/70"
+                  style={{ left: cutoffLeft }}
+                />
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-blue-600 transition-all duration-500"
