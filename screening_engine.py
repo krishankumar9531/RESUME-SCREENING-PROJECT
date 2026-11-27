@@ -713,78 +713,60 @@ def _evaluate_holdout(X: pd.DataFrame, y: pd.Series) -> dict[str, float]:
     }
 
 
-def load_model_bundle_raw(compute_metrics_if_loaded: bool = False) -> dict:
+def load_model_bundle_raw(
+    compute_metrics_if_loaded: bool = False
+) -> dict:
+
     bundle = {
-        "model": None, "source": "", "notice": "", "metrics": None, "importances": None,
-        "edu_map": {}, "pos_idx": 1, "data_summary": None,
+        "model": None,
+        "source": "",
+        "notice": "",
+        "metrics": None,
+        "importances": None,
+        "edu_map": {},
+        "pos_idx": 1,
+        "data_summary": None,
     }
-    probe = pd.DataFrame([{
-        "years_experience": 3, "skills_match_score": 70.0, "education_level": "Bachelors",
-        "project_count": 5, "resume_length": 500, "github_activity": 200,
-    }])
 
-    model = None
-    load_error = ""
-    if MODEL_PATH.exists():
-        try:
-            import joblib
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                candidate = joblib.load(MODEL_PATH)
-                candidate.predict_proba(probe)
-            model = candidate
-            bundle["source"] = f"Loaded {MODEL_PATH.name}"
-        except Exception as exc:  # noqa: BLE001
-            load_error = f"{type(exc).__name__}: {exc}"
-
-    X = y = None
-    if DATA_PATH.exists():
-        try:
-            X, y = load_training_frame()
-            bundle["data_summary"] = {
-                "rows": int(len(X)),
-                "shortlist_rate": float(y.mean()),
-                "medians": {k: float(v) for k, v in X[NUMERIC_COLUMNS].median().to_dict().items()},
-            }
-        except Exception as exc:  # noqa: BLE001
-            load_error = (load_error + " | " if load_error else "") + f"Training data: {exc}"
-
-    if model is None and X is not None:
-        try:
-            bundle["metrics"] = _evaluate_holdout(X, y)
-            model = build_pipeline().fit(X, y)
-            bundle["source"] = "Retrained from ai_resume_screening.csv"
-            bundle["notice"] = (
-                "The saved model could not be used"
-                + (f" ({load_error})" if load_error else "")
-                + ", so it was retrained from the CSV with the installed scikit-learn."
-            )
-            try:
-                import joblib
-                joblib.dump(model, MODEL_PATH)
-                bundle["notice"] += f" The refreshed model was saved to {MODEL_PATH.name}."
-            except Exception:  # noqa: BLE001
-                pass
-        except Exception as exc:  # noqa: BLE001
-            bundle["notice"] = f"Model unavailable ({type(exc).__name__}: {exc}). Scoring uses job-description fit only."
-    elif model is None:
+    if not MODEL_PATH.exists():
         bundle["notice"] = (
-            "No usable model or training data found. Scoring uses job-description fit only."
-            + (f" ({load_error})" if load_error else "")
+            "Saved ML model not found. "
+            "Scoring uses job-description fit only."
         )
-    elif compute_metrics_if_loaded and X is not None and bundle["metrics"] is None:
-        try:
-            bundle["metrics"] = _evaluate_holdout(X, y)
-        except Exception:  # noqa: BLE001
-            pass
+        return bundle
 
-    if model is not None:
+    try:
+        import joblib
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model = joblib.load(MODEL_PATH)
+
+        probe = pd.DataFrame([{
+            "years_experience": 3,
+            "skills_match_score": 70.0,
+            "education_level": "Bachelors",
+            "project_count": 5,
+            "resume_length": 500,
+            "github_activity": 200,
+        }])
+
+        model.predict_proba(probe)
+
         bundle["model"] = model
+        bundle["source"] = f"Loaded {MODEL_PATH.name}"
+
         bundle["edu_map"] = _education_map(model)
         bundle["pos_idx"] = _positive_index(model)
         bundle["importances"] = _feature_importances(model)
-    return bundle
 
+    except Exception as exc:
+        bundle["notice"] = (
+            f"Model loading failed: {type(exc).__name__}: {exc}. "
+            "Scoring uses job-description fit only."
+        )
+
+    return bundle
 
 def model_education(bundle: dict, label: str) -> str:
     if label not in EDU_RANK or label == "Unknown":

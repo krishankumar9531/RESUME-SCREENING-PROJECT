@@ -62,7 +62,7 @@ FRONTEND_DIST = APP_DIR / "frontend" / "dist"
 
 @lru_cache(maxsize=1)
 def get_model_bundle() -> dict[str, Any]:
-    return load_model_bundle_raw(compute_metrics_if_loaded=True)
+    return load_model_bundle_raw(compute_metrics_if_loaded=False)
 
 
 @asynccontextmanager
@@ -289,7 +289,7 @@ def current_hr_user(user: dict[str, Any] = Depends(require_hr_user)) -> dict[str
 # ============================================================
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
+def health():
     return {
         "status": "ok",
         "service": "TalentLens AI"
